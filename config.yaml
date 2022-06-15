@@ -1,0 +1,30 @@
+connect:
+    {'user':'user',
+    'password':'password',
+    'host':'127.0.0.1',
+    'port':3306,
+    'database':'db_registros'
+    }
+
+client:
+    {'user':'user',
+     'key':'key'
+    }
+
+tables:
+    {'rfid':'tb_alunos',
+     'alunos':'tb_alunos',
+     'qrcode':'tb_materiais',
+     'materiais':'tb_materiais',
+    }
+
+database:
+    {'tb_alunos':{'rfid':{'name':'alunos_rfid', 'unique':True, 'type':'int'},
+                  'alunos':{'name':'alunos_nome', 'unique':True, 'type':'str'}, 
+                  'id':{'name':'alunos_id', 'unique':True, 'type':'int'}}, 
+     'tb_materiais':{'qrcode':{'name':'materiais_qrcode', 'unique':True, 'type':'str'},
+                     'materiais':{'name':'materiais_desc', 'unique':False, 'type':'str'},
+                     'id':{'name':'materiais_id', 'unique':True, 'type':'int'}},
+     'tb_registros':{'id':{'name':'registros_id', 'unique':True, 'type':'int'}},
+     'tb_listas':{'id':{'name':'listas_id', 'unique':True, 'type':'int'}}
+    }
