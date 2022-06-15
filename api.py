@@ -236,7 +236,7 @@ class API:
 
 if __name__ == '__main__':
     my_api = API('config.yaml')    
-    #my_api.read()
+    my_api.read()
 """
 #text = 'alunos=Luiz schitz;Rocha&rfid=5657511;1245454'
 text = my_api.feeds('insert')
