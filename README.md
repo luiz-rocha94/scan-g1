@@ -31,10 +31,10 @@ CREATE TABLE `tb_materiais` (`materiais_id` MEDIUMINT UNSIGNED NOT NULL AUTO_INC
                              );
 
 CREATE TABLE `tb_registros` (`registros_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                             `registros_alunos_fk` SMALLINT UNSIGNED NOT NULL,
+                             `registros_done` BOOL NOT NULL DEFAULT 0,
                              `registros_open` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP(), 
                              `registros_close` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP() ON UPDATE CURRENT_TIMESTAMP(),
-                             `registros_alunos_fk` SMALLINT UNSIGNED NOT NULL,
-                             `registros_done` BIT NOT NULL DEFAULT 0,
                               PRIMARY KEY (`registros_id`),
                               FOREIGN KEY (`registros_alunos_fk`) REFERENCES `tb_alunos` (`alunos_id`) ON UPDATE CASCADE ON DELETE CASCADE
                             );

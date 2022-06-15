@@ -112,76 +112,71 @@ class Reader:
             if self.data:
                 alunos, materiais = self.register([idx], self.data)
             else:
-                alunos, materiais = self.register([idx])
-                
-            data_str = f'alunos: {alunos[0]}; Materiais: ' + '; '.join(materiais) + '.'
-            self.my_api.aio.send('registros', data_str)
+                alunos, materiais = self.deregister([idx])
             self.data = []
-            print('\n'+data_str)
             self.buzz.beep(0.5, 1, 1)
             self.clock = time()
     
     def register(self, rfid, qrcode):
-        table_name ='tb_alunos'
-        data = {'alunos_rfid':rfid}
-        old_data = self.select(table_name, data)
+        text = 'rfid='+';'.join(rfid)
+        table_name, old_data = self.my_api.commands(text, 'select', False)
         alunos = {str(x[0]):x[2] for x in old_data}
         
-        table_name ='tb_registros'
-        new_data = {'registros_alunos_fk':list(alunos.keys()), 
-                    'registros_ok':['0' for _ in alunos.keys()]}
-        new_data = self.insert(table_name, new_data)
-        registros = {str(x[0]):x[2] for x in new_data}
+        text = 'alunos_fk='+';'.join(alunos.keys()) + '&done=' + '; '.join(['0' for _ in alunos]) 
+        table_name, new_data = self.my_api.commands(text, 'insert', True)
+        registros = [str(x[0]) for x in new_data]
         
-        table_name ='tb_materiais'
-        data = {'materiais_qrcode':qrcode}
-        old_data = self.select(table_name, data)
+        text = 'qrcode='+';'.join(qrcode)
+        table_name, old_data = self.my_api.commands(text, 'select', False)
         materiais = {str(x[0]):x[2] for x in old_data}
         
-        table_name ='tb_listas'
-        reg_list = list(registros.keys())
+        reg_list = registros.copy()
         mat_list = list(materiais.keys())
         product_list = list(product(reg_list, mat_list))
         reg_list = [x[0] for x in product_list]
         mat_list = [x[1] for x in product_list]
-        new_data = {'listas_registros_fk':reg_list,
-                    'listas_materiais_fk':mat_list}
-        new_data = self.insert(table_name, new_data)
-        listas = {str(x[0]) for x in new_data}
+        text = 'registros_fk='+';'.join(reg_list) + '&materiais_fk=' + ';'.join(mat_list) 
+        table_name, new_data = self.my_api.commands(text, 'insert', True)
+        listas = [str(x[0]) for x in new_data]
         
         alunos_values = ';'.join(alunos.values())
         materiais_values = ';'.join(materiais.values())
-        self.my_api.aio.send('registros', f'register aluno={alunos_values}&materiais={materiais_values}')
-        return alunos.values(), materiais.values()
+        self.my_api.aio.send('registros', f'register alunos={alunos_values}&materiais={materiais_values}')
     
     def deregister(self, rfid):
-        table_name ='tb_alunos'
-        data = {'alunos_rfid':rfid}
-        old_data = self.select(table_name, data)
+        text = 'rfid='+';'.join(rfid)
+        table_name, old_data = self.my_api.commands(text, 'select', False)
         alunos = {str(x[0]):x[2] for x in old_data}
         
-        table_name ='tb_registros'
-        new_data = {'registros_alunos_fk':list(alunos.keys()), 
-                    'registros_ok':['0:1' for _ in alunos.keys()]}
-        new_data = self.update(table_name, new_data)
-        registros = {str(x[0]):x[2] for x in new_data}
+        text = 'alunos_fk='+';'.join(alunos.keys()) + '&done=' + '; '.join(['0:1' for _ in alunos]) 
+        table_name, new_data = self.my_api.commands(text, 'update', True)
+        registros = [str(x[0]) for x in new_data]
         
+        reg_list = registros.copy()
+        mat_list = ["'*'"]
+        product_list = list(product(reg_list, mat_list))
+        reg_list = [x[0] for x in product_list]
+        mat_list = [x[1] for x in product_list]
+        text = 'registros_fk='+';'.join(reg_list) + '&materiais_fk=' + ';'.join(mat_list) 
+        table_name, new_data = self.my_api.commands(text, 'select', False)
+        listas = [str(x[0]) for x in new_data]
+        
+        text = 'registros_fk='+';'.join(registros) + '&materiais_fk=' + '; '.join(['0:1' for _ in alunos]) 
         table_name ='tb_listas'
         reg_list = list(registros.keys())
         new_data = {'listas_registros_fk':reg_list,
                     'listas_materiais_fk':'*'}
-        new_data = self.select(table_name, new_data)
-        listas = list({str(x[2]) for x in new_data})
+        new_data = self.my_api.select(table_name, new_data)
+        materiais = list({str(x[2]) for x in new_data})
         
         table_name ='tb_materiais'
-        data = {'materiais_id':listas}
-        old_data = self.select(table_name, data)
+        data = {'materiais_id':materiais}
+        old_data = self.my_api.select(table_name, data)
         materiais = {str(x[0]):x[2] for x in old_data}
         
         alunos_values = ';'.join(alunos.values())
         materiais_values = ';'.join(materiais.values())
         self.my_api.aio.send('registros', f'deregister alunos={alunos_values}&materiais={materiais_values}')
-        return alunos.values(), materiais.values()
     
         
 if __name__ == '__main__':

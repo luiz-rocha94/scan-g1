@@ -1,14 +1,14 @@
 connect:
-    {'user':'user',
-    'password':'password',
+    {'user':'root',
+    'password':'1234',
     'host':'127.0.0.1',
     'port':3306,
     'database':'db_registros'
     }
 
 client:
-    {'user':'user',
-     'key':'key'
+    {'user':'schitz',
+     'key':'aio_rpeM48Z69yEl0zq1vNwPn2GBrM4i'
     }
 
 tables:
@@ -16,6 +16,10 @@ tables:
      'alunos':'tb_alunos',
      'qrcode':'tb_materiais',
      'materiais':'tb_materiais',
+     'alunos_fk':'tb_registros',
+     'done':'tb_registros',
+     'registros_fk':'tb_listas',
+     'materiais_fk':'tb_listas',
     }
 
 database:
@@ -25,6 +29,10 @@ database:
      'tb_materiais':{'qrcode':{'name':'materiais_qrcode', 'unique':True, 'type':'str'},
                      'materiais':{'name':'materiais_desc', 'unique':False, 'type':'str'},
                      'id':{'name':'materiais_id', 'unique':True, 'type':'int'}},
-     'tb_registros':{'id':{'name':'registros_id', 'unique':True, 'type':'int'}},
-     'tb_listas':{'id':{'name':'listas_id', 'unique':True, 'type':'int'}}
+     'tb_registros':{'id':{'name':'registros_id', 'unique':True, 'type':'int'},
+                     'alunos_fk':{'name':'registros_alunos_fk', 'unique':True, 'type':'int'},
+                     'done':{'name':'registros_done', 'unique':False, 'type':'int'}},
+     'tb_listas':{'id':{'name':'listas_id', 'unique':True, 'type':'int'},
+                  'registros_fk':{'name':'listas_registros_fk', 'unique':False, 'type':'int'},
+                  'materiais_fk':{'name':'listas_materiais_fk', 'unique':False, 'type':'int'}}
     }

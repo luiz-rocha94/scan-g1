@@ -135,7 +135,7 @@ class API:
     
     def update(self, table_name, data):
         case = lambda x, id0, id1: [y.split(':')[id0] if ':' in y else [y,''][id1] 
-                              for y in x] 
+                                    for y in x] 
         old_data = self.select(table_name, {key:case(values,0,0) for key, values in data.items()})
         ids = [str(x[0]) for x in old_data]
         table_cfg = self.cfg.database[table_name]
@@ -144,7 +144,7 @@ class API:
         columns_values = ', '.join([key + ' = ' +
                                     '(case ' + 
                                     ' '.join([update_f(id, value) 
-                                              for id, value in zip(ids,case(values,1,1)) if value]) + 
+                                              for id, value in zip(ids, case(values,1,1)*len(ids)) if value]) + 
                                     ' end)' 
                                     for key, values in data.items() 
                                     if [value for value in values if ':' in value]])
@@ -174,16 +174,30 @@ class API:
         new_data = [x for x in self.cur.fetchall()]
         return new_data
     
-    def commands(self, text, mode):
-        table_name, data = self.transform(text)
-        if mode == 'insert':
-            new_data = self.insert(table_name, data)
-        elif mode == 'update':
-            new_data = self.update(table_name, data)
-        elif mode == 'delete':
-            new_data = self.delete(table_name, data)
-        else:
-            new_data = self.select(table_name, data)
+    def commands(self, text, mode, send=True):
+        response = ''
+        try:
+            table_name, data = self.transform(text)
+            if mode == 'insert':
+                new_data = self.insert(table_name, data)
+            elif mode == 'update':
+                new_data = self.update(table_name, data)
+            elif mode == 'delete':
+                new_data = self.delete(table_name, data)
+            else:
+                new_data = self.select(table_name, data)
+            
+            table_cfg = self.cfg.database[table_name]  
+            keys = ', '.join([key for key in table_cfg.keys()][1:3])
+            values = [x[1:] for x in new_data]
+            response = f'{mode} {keys} {values}'
+        except Exception as e:
+            print(e)
+            response = str(e)
+        
+        if send:
+            self.aio.send('api.response', response)
+            
         return table_name, new_data
     
     def feeds(self, mode):
@@ -216,17 +230,7 @@ class API:
                 if created_time > last_time:
                     last_time = created_time
                     text = data.value
-                    response = ''
-                    try:
-                        table_name, new_data = self.commands(text, mode)
-                        table_cfg = self.cfg.database[table_name]  
-                        keys = ', '.join([key for key in table_cfg.keys() if key != 'id'])
-                        new_data = [x[1:] for x in new_data]
-                        response = f'{mode} {keys} {new_data}'
-                    except Exception as e:
-                        print(e)
-                        response = str(e)
-                    self.aio.send('api.response', response)
+                    self.commands(text, mode)
             sleep(1)
             
 
