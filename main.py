@@ -10,6 +10,7 @@ from api import API
 from itertools import product
 
 from threading import Thread
+from multiprocessing import Process
 
 class Reader:
     mode = {0:'qrcode', 1:'micro qrcode'}
@@ -191,7 +192,16 @@ class Reader:
     
         
 if __name__ == '__main__':
+    my_api = API('config.yaml')   
+    
     GPIO.cleanup()
     reader = Reader()
     reader.test_reader()
-    reader.data_reader()
+    
+    p1 = Process(target=my_api.read)
+    p2 = Process(target=reader.data_reader)
+    p1.start()
+    p2.start()
+    p1.join()
+    p2.join()
+    

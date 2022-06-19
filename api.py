@@ -16,6 +16,8 @@ from time import sleep
 from threading import Thread
 from queue import Queue
 
+from multiprocessing import Process
+
 def merge_new_config(config, new_config):
     for key, val in new_config.items():
         if not isinstance(val, dict):
@@ -251,8 +253,12 @@ class API:
         self.q.join()
 
 if __name__ == '__main__':
-    my_api = API('config.yaml')    
-    my_api.read()
+    my_api = API('config.yaml')   
+    
+    p1 = Process(target=my_api.read)
+    p1.start()
+    p1.join()
+    
 """
 #text = 'alunos=Luiz schitz;Rocha&rfid=5657511;1245454'
 text = my_api.feeds('insert')
