@@ -13,6 +13,9 @@ from Adafruit_IO import Client
 from datetime import datetime, timezone
 from time import sleep
 
+from threading import Thread
+from queue import Queue
+
 def merge_new_config(config, new_config):
     for key, val in new_config.items():
         if not isinstance(val, dict):
@@ -66,14 +69,14 @@ class API:
             self.cur.execute(text)
         except mariadb.Error as e:
             print(f"Error connecting to MariaDB Platform: {e}")
-            raise Exception(f"cur.execute(text)")
+            raise Exception("cur.execute(text)")
     
     def transform(self, text):
         """
-        text: column_0=value_0;value_1&column_1=value_2;value_3
-        table_name: cfg.tables[column_0]
-        data: {cfg.database[table_name][column_0]:[value0, value1], 
-               cfg.database[table_name][column_1]:[value2, value3]}
+        text = column_0=value_0;value_1:value_2&column_1=value_3;value_4:value_5
+        table_name = cfg.tables[column_0]
+        data = {cfg.database[table_name][column_0]:['value_0', 'value_1':'value_2'], 
+                cfg.database[table_name][column_1]:[value_3, value_4:value_5]}
         """
         str_f = lambda x: re.sub(' +', ' ', x).strip().lower()
         data_f = lambda x: {str_f(y.split('=')[0]):[str_f(z) for z in y.split('=')[1].split(';')] 
@@ -211,6 +214,21 @@ class API:
             data = self.aio.receive('api.select')
         return data
     
+    def listen(self):
+        mode = self.q.get()
+        print(mode)
+        while True:
+            data = self.feeds(mode)
+            created_time = datetime.strptime(data.created_at+'+0000',
+                                             '%Y-%m-%dT%H:%M:%SZ%z')
+            if created_time > self.last_time:
+                self.last_time = created_time
+                text = data.value
+                self.commands(text, mode)
+            sleep(1)
+        self.q.task_done()
+    
+    
     def read(self):
         data = self.feeds('select')
         last_time = datetime.strptime(data.created_at+'+0000',
@@ -222,17 +240,15 @@ class API:
             if created_time > last_time:
                 last_time = created_time
 
-        while True:
-            for mode in ['insert', 'update', 'delete', 'select']:
-                data = self.feeds(mode)
-                created_time = datetime.strptime(data.created_at+'+0000',
-                                                 '%Y-%m-%dT%H:%M:%SZ%z')
-                if created_time > last_time:
-                    last_time = created_time
-                    text = data.value
-                    self.commands(text, mode)
-            sleep(1)
-            
+        self.last_time = last_time        
+        self.q = Queue()
+        for mode in ['insert', 'update', 'delete', 'select']:
+            self.q.put(mode)
+            worker = Thread(target=self.listen)
+            worker.daemon = True
+            worker.start()
+                
+        self.q.join()
 
 if __name__ == '__main__':
     my_api = API('config.yaml')    

@@ -9,6 +9,8 @@ import numpy as np
 from api import API
 from itertools import product
 
+from threading import Thread
+
 class Reader:
     mode = {0:'qrcode', 1:'micro qrcode'}
     
@@ -26,24 +28,15 @@ class Reader:
         self.clock = time()
         
     def data_reader(self):
-        cap = cv2.VideoCapture(0)
-        while True:
-            dtime = time() - self.clock
-            state = dtime % 3 <= 1
-            print('\rdtime {:.2f}\tstate: {}\t'.format(dtime, state), end='')
-            _, img = cap.read()
-            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-            if dtime > 5:
-                if state:
-                    self.rfid_reader()
-                else:
-                    self.qrcode_reader(img)
-            cv2.imshow("code detector", img)
-            if cv2.waitKey(1) == ord("q"):
-                break
-        cap.release()
-        cv2.destroyAllWindows()
-        GPIO.cleanup()
+        t1 = Thread(target=self.qrcode_reader)
+        t2 = Thread(target=self.rfid_reader)
+        
+        t1.start()
+        t2.start()
+        
+        t1.join()
+        t2.join()        
+    
     
     def test_reader(self):
         self.led.off()
@@ -52,9 +45,9 @@ class Reader:
         except:
             print('Adafruit IO não está funcionando!')
         
-        self.led.blink(0.5, 0.5)        
         
         cap = cv2.VideoCapture(0)
+        self.led.blink(0.5, 0.5)        
         while True:
             _, img = cap.read()
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
@@ -66,7 +59,7 @@ class Reader:
                     data.append(qr.message)
             except:
                 print('QRcode não está funcionando!')
-            cv2.imshow("code detector", img)
+            #cv2.imshow("code detector", img)
             if cv2.waitKey(1) == ord("q") or data:
                 self.buzz.beep(0.5, 1, 1)
                 self.my_api.aio.send('debug', 'QRcode está funcionando!')
@@ -86,36 +79,54 @@ class Reader:
         self.data = []
         self.clock = time()
     
-    def qrcode_reader(self, img):
-        try:
-            pb_img = pb.ndarray_to_boof(img)
-            self.detector.detect(pb_img)
-            data = []
-            for qr in self.detector.detections:
-                data.append(qr.message)
-        except:
-            data, bbox = None, None
-            print('\nFalha na leitura do QRcode!')
-        if data:
-            self.data += data
-            print(f'\nLeitura QRcode: {data}')
-            self.buzz.beep(0.5, 1, 1)
-            self.clock = time()
+    def qrcode_reader(self):
+        cap = cv2.VideoCapture(0)
+        while True:
+            dtime = time() - self.clock
+            if dtime > 5:
+                _, img = cap.read()
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+                try:
+                    pb_img = pb.ndarray_to_boof(img)
+                    self.detector.detect(pb_img)
+                    data = []
+                    for qr in self.detector.detections:
+                        data.append(qr.message)
+                except:
+                    data, bbox = None, None
+                    print('\nFalha na leitura do QRcode!')
+                
+                if data:
+                    self.data += data
+                    print(f'\nLeitura QRcode: {data}')
+                    self.buzz.beep(0.5, 1, 1)
+                    self.clock = time()
+                
+                #cv2.imshow("code detector", img)
+                if cv2.waitKey(1) == ord("q"):
+                    break
+        cap.release()
+        cv2.destroyAllWindows()
     
     def rfid_reader(self):
-        try:
-            idx, text = self.rfid.read_no_block()
-        except:
-            idx, text = None, None 
-            print('\nFalha na leitura do RFID!')
-        if idx:
-            if self.data:
-                alunos, materiais = self.register([idx], self.data)
-            else:
-                alunos, materiais = self.deregister([idx])
-            self.data = []
-            self.buzz.beep(0.5, 1, 1)
-            self.clock = time()
+        while True:
+            dtime = time() - self.clock
+            if dtime > 5:
+                try:
+                    idx, text = self.rfid.read_no_block()
+                except:
+                    idx, text = None, None 
+                    print('\nFalha na leitura do RFID!')
+                
+                if idx:
+                    if self.data:
+                        alunos, materiais = self.register([idx], self.data)
+                    else:
+                        alunos, materiais = self.deregister([idx])
+                    self.data = []
+                    self.buzz.beep(0.5, 1, 1)
+                    self.clock = time()
+        GPIO.cleanup()
     
     def register(self, rfid, qrcode):
         text = 'rfid='+';'.join(rfid)
