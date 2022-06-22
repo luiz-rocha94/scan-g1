@@ -8,7 +8,7 @@ connect:
 
 client:
     {'user':'schitz',
-     'key':'aio_AFse307h1vRX1N8wipRhqXiFz9sF'
+     'key':'aio_eFzb25ii7QuLeaquHbNs5nWPmJMz'
     }
 
 tables:
@@ -20,19 +20,23 @@ tables:
      'done':'tb_registros',
      'registros_fk':'tb_listas',
      'materiais_fk':'tb_listas',
-    }
+     'registros':'tb_view',
+     'listas':'tb_view'}
 
 database:
-    {'tb_alunos':{'rfid':{'name':'alunos_rfid', 'unique':True, 'type':'int'},
-                  'alunos':{'name':'alunos_nome', 'unique':True, 'type':'str'}, 
-                  'id':{'name':'alunos_id', 'unique':True, 'type':'int'}}, 
-     'tb_materiais':{'qrcode':{'name':'materiais_qrcode', 'unique':True, 'type':'str'},
-                     'materiais':{'name':'materiais_desc', 'unique':False, 'type':'str'},
-                     'id':{'name':'materiais_id', 'unique':True, 'type':'int'}},
+    {'tb_alunos':{'id':{'name':'alunos_id', 'unique':True, 'type':'int'},
+                  'rfid':{'name':'alunos_rfid', 'unique':True, 'type':'int'},
+                  'alunos':{'name':'alunos_nome', 'unique':True, 'type':'str'}}, 
+     'tb_materiais':{'id':{'name':'materiais_id', 'unique':True, 'type':'int'},
+                     'qrcode':{'name':'materiais_qrcode', 'unique':True, 'type':'str'},
+                     'materiais':{'name':'materiais_desc', 'unique':False, 'type':'str'}},
      'tb_registros':{'id':{'name':'registros_id', 'unique':True, 'type':'int'},
                      'alunos_fk':{'name':'registros_alunos_fk', 'unique':True, 'type':'int'},
                      'done':{'name':'registros_done', 'unique':False, 'type':'int'}},
      'tb_listas':{'id':{'name':'listas_id', 'unique':True, 'type':'int'},
                   'registros_fk':{'name':'listas_registros_fk', 'unique':False, 'type':'int'},
-                  'materiais_fk':{'name':'listas_materiais_fk', 'unique':False, 'type':'int'}}
+                  'materiais_fk':{'name':'listas_materiais_fk', 'unique':False, 'type':'int'}},
+     'tb_view':{'id':{'name':'listas_id', 'unique':True, 'type':'int'},
+                'registros':{'name':'alunos_nome', 'unique':False, 'type':'str'},
+                'listas':{'name':'materiais_desc', 'unique':False, 'type':'str'}}
     }

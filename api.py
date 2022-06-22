@@ -197,10 +197,10 @@ class API:
             values = [x[1:] for x in new_data]
             response = f'{mode} {keys} {values}'
         except Exception as e:
-            print(e)
             response = str(e)
         
         if send:
+            print(response)
             self.aio.send('api.response', response)
             
         return table_name, new_data
@@ -250,7 +250,7 @@ class API:
             worker.daemon = True
             worker.start()
                 
-        self.q.join()
+        #self.q.join()
 
 if __name__ == '__main__':
     my_api = API('config.yaml')   
